@@ -294,7 +294,17 @@ func (ws *windowsService) Status() (Status, error) {
 		if err.Error() == "The specified service does not exist as an installed service." {
 			return StatusUnknown, ErrNotInstalled
 		}
-		return StatusUnknown, err
+		// Enumerate all services to detect ErrNotInstalled for non-English languages.
+		services, err := m.ListServices()
+		if err != nil {
+			return StatusUnknown, err
+		}
+		for service := range services {
+			if service == ws.Name {
+				return StatusUnknown, err
+			}
+		}
+		return StatusUnknown, ErrNotInstalled
 	}
 	defer s.Close()
 
