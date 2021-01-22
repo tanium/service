@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"golang.org/x/sys/windows/registry"
@@ -20,6 +21,8 @@ import (
 )
 
 const version = "windows-service"
+
+const errnoServiceDoesNotExist syscall.Errno = 1060
 
 type windowsService struct {
 	i Interface
@@ -291,7 +294,7 @@ func (ws *windowsService) Status() (Status, error) {
 
 	s, err := m.OpenService(ws.Name)
 	if err != nil {
-		if err.Error() == "The specified service does not exist as an installed service." {
+		if errno, ok := err.(syscall.Errno); ok && errno == errnoServiceDoesNotExist {
 			return StatusUnknown, ErrNotInstalled
 		}
 		return StatusUnknown, err
